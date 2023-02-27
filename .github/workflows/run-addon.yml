@@ -4,4 +4,9 @@ on: repository_dispatch
 
 jobs:
   Run-Add-On:
-    uses: MuckRock/documentcloud-addon-workflows/.github/workflows/run-addon.yml@v1
+    uses: MuckRock/documentcloud-addon-workflows/.github/workflows/run-addon.yml@lfs
+    with:
+      lfs: true
+    secrets:
+      token: ${{ secrets.GAC }}
+

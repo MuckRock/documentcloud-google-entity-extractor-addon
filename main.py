@@ -5,6 +5,7 @@ This is a proof of concept for using the new Entity API with DocumentCloud
 import json
 import logging
 import operator
+import os
 from bisect import bisect
 from functools import reduce
 from tempfile import NamedTemporaryFile

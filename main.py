@@ -43,7 +43,7 @@ class GCPEntityExtractor(AddOn):
 
     def extract_entities(self, document):
         """Coordinate the extraction of all of the entities"""
-        all_page_text = json.loads(document.get_json_text())
+        all_page_text = document.get_json_text()
         texts = []
         total_bytes = 0
         page_map = [0]

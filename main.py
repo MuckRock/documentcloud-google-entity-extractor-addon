@@ -163,7 +163,11 @@ class GCPEntityExtractor(AddOn):
             )
 
         # limit these to a certain number at a time
-        wikidata_ids = [e["metadata"]["wikidata_id"] for e in entities]
+        wikidata_ids = [
+            e["metadata"]["wikidata_id"]
+            for e in entities
+            if e["metadata"]["wikidata_id"] is not None
+        ]
         resp = self.client.get(
             "entities/", params={"wikidata_id__in": ",".join(wikidata_ids)}
         )

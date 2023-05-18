@@ -37,7 +37,7 @@ class GCPEntityExtractor(AddOn):
         os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gac.name
 
     def main(self):
-        self.setup_credential_file()
+        # self.setup_credential_file()
         for document in self.get_documents():
             self.extract_entities(document)
 
@@ -122,6 +122,8 @@ class GCPEntityExtractor(AddOn):
         """
         logger.info("Creating %d entities", len(entities))
         entity_map = self.get_or_create_entities(entities)
+        # remove entities which still do not have a wikidata_id
+        entities = [e for e in entities if e["metadata"]["wikidata_id"] is not None]
 
         logger.info("Collapse entity occurrences")
         collapsed_entities = {}

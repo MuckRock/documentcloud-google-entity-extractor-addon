@@ -1,4 +1,4 @@
-python-documentcloud==3.3.7
+python-documentcloud==3.7.1
 requests
 google-cloud-language
 wikimapper

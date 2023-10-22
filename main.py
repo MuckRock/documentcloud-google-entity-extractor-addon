@@ -37,9 +37,9 @@ class GCPEntityExtractor(AddOn):
         os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gac.name
 
     def main(self):
-        if not self.documents:
+        """if not self.documents:
             self.set_message("Please select at least one document.")
-            return
+            return"""
         self.setup_credential_file()
         for document in self.get_documents():
             self.extract_entities(document)

@@ -1,5 +1,6 @@
 title: Google Cloud Entity Extractor
 description: Extract entities using Google Cloud's natural language API
+instructions: ''
 type: object
 documents:
   - selected

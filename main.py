@@ -16,7 +16,7 @@ from google.cloud.language_v1.types.language_service import \
 from wikimapper import WikiMapper
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.FATAL)
 
 BYTE_LIMIT = 1000000
 BULK_LIMIT = 25

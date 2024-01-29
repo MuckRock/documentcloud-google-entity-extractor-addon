@@ -48,13 +48,11 @@ class GCPEntityExtractor(AddOn):
         """Fetch existing entities for the document"""
         try:
             resp = self.client.get(f"documents/{document.id}/entities/")
-            if resp.json()["results"]:
-                return {entity["id"] for entity in resp.json()["results"]}
-            logger.info(f"No existing entities found for document {document.id}")
-            return set()
+            return {entity["entity"] for entity in resp.json()["results"]}
         except APIError as api_error:
             logger.error(f"API Error while fetching existing entities: {api_error}")
             return set()
+
 
 
     def extract_entities(self, document):

@@ -2,16 +2,14 @@
 This is a proof of concept for using the new Entity API with DocumentCloud
 """
 
-import json
 import logging
-import operator
 import os
 from bisect import bisect
-from functools import reduce
 from tempfile import NamedTemporaryFile
 
 from documentcloud.addon import AddOn
-from documentcloud.toolbox import grouper, requests_retry_session
+from documentcloud.exceptions import APIError
+from documentcloud.toolbox import grouper
 from google.cloud import language_v1
 from google.cloud.language_v1.types.language_service import \
     AnalyzeEntitiesResponse
@@ -26,23 +24,38 @@ BULK_LIMIT = 25
 
 class GCPEntityExtractor(AddOn):
     """Extract entities using GCP NLP API"""
+    def __init__(self):
+        super().__init__()
+        self.errors = 0
+        self.successes = 0
 
     def setup_credential_file(self):
+        """ Sets up Google Cloud developer credential file"""
         credentials = os.environ["TOKEN"]
         # put the contents into a named temp file
         # and set the var to the name of the file
-        gac = NamedTemporaryFile(delete=False)
-        gac.write(credentials.encode("ascii"))
-        gac.close()
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gac.name
+        with NamedTemporaryFile(delete=False) as gac:
+            gac.write(credentials.encode("ascii"))
+            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gac.name
 
     def main(self):
-        """if not self.documents:
-            self.set_message("Please select at least one document.")
-            return"""
+        """ Set up the credential file and extract entities for each document"""
         self.setup_credential_file()
         for document in self.get_documents():
             self.extract_entities(document)
+
+    def get_existing_entities(self, document):
+        """Fetch existing entities for the document"""
+        try:
+            resp = self.client.get(f"documents/{document.id}/entities/")
+            if resp.json()["results"]:
+                return {entity["id"] for entity in resp.json()["results"]}
+            logger.info(f"No existing entities found for document {document.id}")
+            return set()
+        except APIError as api_error:
+            logger.error(f"API Error while fetching existing entities: {api_error}")
+            return set()
+
 
     def extract_entities(self, document):
         """Coordinate the extraction of all of the entities"""
@@ -123,6 +136,7 @@ class GCPEntityExtractor(AddOn):
         """Create the entity occurrence objects in the database,
         linking the entities to the document
         """
+        existing_entities = self.get_existing_entities(document)
         logger.info("Creating %d entities", len(entities))
         entity_map = self.get_or_create_entities(entities)
         # remove entities which still do not have a wikidata_id
@@ -132,6 +146,11 @@ class GCPEntityExtractor(AddOn):
         collapsed_entities = {}
         for entity in entities:
             entity_id = entity_map[entity["metadata"]["wikidata_id"]]
+
+            if entity_id in existing_entities:
+                logger.warning(f"Duplicate entity found for ID {entity_id}. Skipping...")
+                continue
+
             if entity_id in collapsed_entities:
                 collapsed_entities[entity_id]["mentions"].extend(entity["mentions"])
             else:
@@ -139,23 +158,34 @@ class GCPEntityExtractor(AddOn):
 
         logger.info("Create entity occurrence objects")
         occurrence_json = []
-        for entity_id, entity in collapsed_entities.items():
-            occurrences = self.transform_mentions(entity["mentions"], page_map)
-            occurrence_json.append(
-                {
-                    "entity": entity_id,
-                    "relevance": entity["salience"],
-                    "occurrences": occurrences,
-                }
-            )
+        occurrence_json = [
+            {
+                "entity": entity_id,
+                "relevance": entity["salience"],
+                "occurrences": self.transform_mentions(entity["mentions"], page_map),
+            }
+            for entity_id, entity in collapsed_entities.items() if entity_id not in existing_entities
+        ]
 
         # XXX check for duplicate entities
         for group in grouper(occurrence_json, BULK_LIMIT):
-            resp = self.client.post(
-                f"documents/{document.id}/entities/",
-                json=[g for g in group if g is not None],
-            )
-            # XXX check resp
+            try:
+                self.client.post(
+                    f"documents/{document.id}/entities/",
+                    json=[g for g in group if g is not None],
+                )
+            except APIError as api_error:
+                logger.error("API Error: %s", api_error)
+                error_code = api_error.status_code
+                if error_code == 400:
+                    logger.error(
+                        "There is an indexing issue with posting entities to this document"
+                    )
+                if error_code == 403:
+                    logger.error(
+                        "You do not have permission to create entities on document %s", document.id
+                    )
+                self.errors += 1
 
     def get_or_create_entities(self, entities):
         """Get or create the entities returned from the API in the database"""

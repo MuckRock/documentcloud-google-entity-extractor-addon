@@ -11,8 +11,7 @@ from documentcloud.addon import AddOn
 from documentcloud.exceptions import APIError
 from documentcloud.toolbox import grouper
 from google.cloud import language_v1
-from google.cloud.language_v1.types.language_service import \
-    AnalyzeEntitiesResponse
+from google.cloud.language_v1.types.language_service import AnalyzeEntitiesResponse
 from wikimapper import WikiMapper
 
 logger = logging.getLogger(__name__)
@@ -24,13 +23,14 @@ BULK_LIMIT = 25
 
 class GCPEntityExtractor(AddOn):
     """Extract entities using GCP NLP API"""
+
     def __init__(self):
         super().__init__()
         self.errors = 0
         self.successes = 0
 
     def setup_credential_file(self):
-        """ Sets up Google Cloud developer credential file"""
+        """Sets up Google Cloud developer credential file"""
         credentials = os.environ["TOKEN"]
         # put the contents into a named temp file
         # and set the var to the name of the file
@@ -39,7 +39,7 @@ class GCPEntityExtractor(AddOn):
             os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gac.name
 
     def main(self):
-        """ Set up the credential file and extract entities for each document"""
+        """Set up the credential file and extract entities for each document"""
         self.setup_credential_file()
         for document in self.get_documents():
             self.extract_entities(document)
@@ -50,10 +50,8 @@ class GCPEntityExtractor(AddOn):
             resp = self.client.get(f"documents/{document.id}/entities/")
             return {entity["entity"] for entity in resp.json()["results"]}
         except APIError as api_error:
-            logger.error(f"API Error while fetching existing entities: {api_error}")
+            logger.error("API Error while fetching existing entities: %s", api_error)
             return set()
-
-
 
     def extract_entities(self, document):
         """Coordinate the extraction of all of the entities"""
@@ -146,7 +144,7 @@ class GCPEntityExtractor(AddOn):
             entity_id = entity_map[entity["metadata"]["wikidata_id"]]
 
             if entity_id in existing_entities:
-                logger.warning(f"Duplicate entity found for ID {entity_id}. Skipping...")
+                logger.warning("Duplicate entity found for ID %s. Skipping...", entity_id)
                 continue
 
             if entity_id in collapsed_entities:
@@ -162,10 +160,10 @@ class GCPEntityExtractor(AddOn):
                 "relevance": entity["salience"],
                 "occurrences": self.transform_mentions(entity["mentions"], page_map),
             }
-            for entity_id, entity in collapsed_entities.items() if entity_id not in existing_entities
+            for entity_id, entity in collapsed_entities.items()
+            if entity_id not in existing_entities
         ]
 
-        # XXX check for duplicate entities
         for group in grouper(occurrence_json, BULK_LIMIT):
             try:
                 self.client.post(
@@ -181,7 +179,8 @@ class GCPEntityExtractor(AddOn):
                     )
                 if error_code == 403:
                     logger.error(
-                        "You do not have permission to create entities on document %s", document.id
+                        "You do not have permission to create entities on document %s",
+                        document.id,
                     )
                 self.errors += 1
 

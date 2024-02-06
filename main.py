@@ -125,8 +125,6 @@ class GCPEntityExtractor(AddOn):
         for entity in entities:
             for mention in entity["mentions"]:
                 mention["text"]["begin_offset"] += character_offset
-        print("----Entities----")
-        print(entities)
         return entities
 
     def create_entity_occurrences(self, entities, document, page_map):
@@ -220,8 +218,6 @@ class GCPEntityExtractor(AddOn):
             # TODO check resp status_code
             for entity in resp.json():
                 entity_map[entity["wikidata_id"]] = entity["id"]
-        print("----Entity Map----")
-        print(entity_map)
         return entity_map
 
     def transform_mentions(self, mentions, page_map):
@@ -243,8 +239,6 @@ class GCPEntityExtractor(AddOn):
             occurrence["page_offset"] = page_offset
 
             occurrences.append(occurrence)
-        print("----Occurrences----")
-        print(occurrences)
         return occurrences
 
 

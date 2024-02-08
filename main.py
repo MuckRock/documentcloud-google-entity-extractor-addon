@@ -4,11 +4,13 @@ This is a proof of concept for using the new Entity API with DocumentCloud
 
 import logging
 import os
+import sys
 from bisect import bisect
 from tempfile import NamedTemporaryFile
 
 from documentcloud.addon import AddOn
 from documentcloud.exceptions import APIError
+from documentcloud.exceptions import DoesNotExistError
 from documentcloud.toolbox import grouper
 from google.cloud import language_v1
 from google.cloud.language_v1.types.language_service import AnalyzeEntitiesResponse
@@ -55,7 +57,15 @@ class GCPEntityExtractor(AddOn):
 
     def extract_entities(self, document):
         """Coordinate the extraction of all of the entities"""
-        all_page_text = document.get_json_text()
+        try:
+            all_page_text = document.get_json_text()
+        except DoesNotExistError:
+            self.set_message(
+                f"The document {document.id}" 
+                "has not been OCR'd recently and is missing a JSON txt file."
+                "Apply OCR and try this Add-On again"
+            )
+            sys.exit(0)
         texts = []
         total_bytes = 0
         page_map = [0]
@@ -173,9 +183,14 @@ class GCPEntityExtractor(AddOn):
                 logger.error("API Error: %s", api_error)
                 error_code = api_error.status_code
                 if error_code == 400:
+                    self.set_message(
+                        "Indexing error. Please try applying OCR to the document"
+                        f"{document.id} and running this Add-On again."
+                    )
                     logger.error(
                         "There is an indexing issue with posting entities to this document"
                     )
+                    sys.exit(0)
                 if error_code == 403:
                     logger.error(
                         "You do not have permission to create entities on document %s",

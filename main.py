@@ -227,9 +227,12 @@ class GCPEntityExtractor(AddOn):
         # on DocumentCloud yet
         missing_wikidata_ids = [q for q in wikidata_ids if q not in entity_map]
         for group in grouper(missing_wikidata_ids, BULK_LIMIT):
-            resp = self.client.post(
-                "entities/", json=[{"wikidata_id": q} for q in group if q is not None]
-            )
+            try:
+                resp = self.client.post(
+                    "entities/", json=[{"wikidata_id": q} for q in group if q is not None]
+                )
+            except APIError:
+                print("Duplicate entity")
             # TODO check resp status_code
             for entity in resp.json():
                 entity_map[entity["wikidata_id"]] = entity["id"]

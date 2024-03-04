@@ -233,6 +233,7 @@ class GCPEntityExtractor(AddOn):
                 )
             except APIError:
                 print("Duplicate entity")
+                break
             # TODO check resp status_code
             for entity in resp.json():
                 entity_map[entity["wikidata_id"]] = entity["id"]

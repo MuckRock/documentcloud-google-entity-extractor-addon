@@ -150,8 +150,10 @@ class GCPEntityExtractor(AddOn):
         logger.info("Collapse entity occurrences")
         collapsed_entities = {}
         for entity in entities:
-            entity_id = entity_map[entity["metadata"]["wikidata_id"]]
-
+            try:
+                entity_id = entity_map[entity["metadata"]["wikidata_id"]]
+            except KeyError as k:
+                print(f"Key Error: {k}")
             if entity_id in existing_entities:
                 logger.warning("Duplicate entity found for ID %s. Skipping...", entity_id)
                 continue

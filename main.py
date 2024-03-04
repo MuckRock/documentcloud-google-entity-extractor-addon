@@ -236,7 +236,10 @@ class GCPEntityExtractor(AddOn):
                 break
             # TODO check resp status_code
             for entity in resp.json():
-                entity_map[entity["wikidata_id"]] = entity["id"]
+                try:
+                    entity_map[entity["wikidata_id"]] = entity["id"]
+                except KeyError as k:
+                    print(f"Key error:{k}")
         return entity_map
 
     def transform_mentions(self, mentions, page_map):

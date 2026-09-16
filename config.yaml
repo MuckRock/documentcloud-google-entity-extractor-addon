@@ -1,9 +1,13 @@
 title: Google Cloud Entity Extractor
 description: Extract entities using Google Cloud's natural language API. 
 instructions: 'After running this Add-On and receiving a success, run the [Entity Export Add-On](https://www.documentcloud.org/app?q=%2B%20#add-ons/MuckRock/documentcloud-entity-export-addon) to see the entities.'
+disclosures: |
+  This Add-On sends data to a Google Cloud Natural Language endpoint which uses a form of machine learning to OCR documents. 
+  Read the Google Cloud Natural Language API [data usage FAQ](https://docs.cloud.google.com/natural-language/docs/data_usage) to learn more. 
 type: object
 documents:
   - selected
 properties: {}
 categories:
   - ai
+version: 2 
